@@ -1,0 +1,75 @@
+default_language_version:
+  python: python3.13
+
+exclude: ^(build|dist|\.eggs|\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist)$
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff-check
+        name: "ruff lint"
+        args:
+          - --fix
+          - --exit-non-zero-on-fix
+        types_or: [python, pyi]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff-format
+        name: "ruff format"
+        types_or: [python, pyi]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.20.2
+    hooks:
+      - id: mypy
+        name: "mypy type check"
+        args:
+          - --strict
+          - --ignore-missing-imports
+        files: ^src/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: "hygiene trailing whitespace"
+      - id: end-of-file-fixer
+        name: "hygiene end of file newline"
+      - id: mixed-line-ending
+        name: "hygiene mixed line endings"
+        args: [--fix=lf]
+
+      - id: check-yaml
+        name: "hygiene validate YAML"
+      - id: check-toml
+        name: "hygiene validate TOML"
+      - id: check-json
+        name: "hygiene validate JSON"
+
+      - id: check-ast
+        name: "hygiene validate Python AST"
+      - id: debug-statements
+        name: "hygiene block debug statements"
+      - id: check-builtin-literals
+        name: "hygiene literal builtins"
+
+      - id: check-merge-conflict
+        name: "hygiene merge conflict markers"
+      - id: check-added-large-files
+        name: "hygiene large file guard"
+        args: [--maxkb=500]
+      - id: no-commit-to-branch
+        name: "hygiene protect main branch"
+        args: [--branch, main]
+
+  - repo: local
+    hooks:
+      - id: pytest-testmon
+        name: pytest-testmon on changed Python files
+        entry: uv run pytest --testmon --cov=src
+        language: system
+        files: ^(tests|src)/.*\.py$
+        types: [python]
