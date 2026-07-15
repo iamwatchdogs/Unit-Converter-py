@@ -8,7 +8,7 @@ In this document, we will discuss and evaluate all the possible design implement
 
 > [!NOTE]
 >
-> These are the raw thought processes that I have spent days choosing the right design implementation for this problem statement, with the given constraints.
+> These are the raw thought processes that I have spent weeks/months choosing the right design implementation for this problem statement, with the given constraints.
 > After I had laid out all of my thinking and ended up with these three solutions, I compared them with the existing solution to get a more practical approach to implementation.
 >
 > Also please mind the naming for the identified, I'm just laying out my raw idea and through process so please bare with me when I try my best to express my chain of though I went through to design this small application.
@@ -342,7 +342,7 @@ Piece everything together, we have a well defined working solution with good eno
 
 ### Optimization
 
-Now that we have properly defined the chain-of-though on how we ended up with current working solution, we need to address the elephant in the room i.e., overhead. This approach has good manageable abstraction than the first approach, but this approach comes with a greater cost.
+Now that we have properly defined the whole thought process on how we ended up with current working solution, we need to address the elephant in the room i.e., overhead. This approach has good manageable abstraction than the first approach, but this approach comes with a greater cost.
 
 #### Global Registry
 
@@ -360,14 +360,18 @@ Some of the viable optimization options are:
 
 - Precomplie them using `mypyc`
 - Serialize the global resigtry as pickle file.
-- Break them down into dense and sparse matrices.
+- Break them down into _(even better but complex)_ dense and sparse matrices.
 - Refactor the existing logic to have an offset flag to handle based on the situation.
 
 And all of these options add unnecessary complexity for such simple project. Not to mention, all of these options are out of the scope and highly discouraged by the PRDs.
 
 #### Unit Category Search
 
-The existing logic for searching unit category is pretty good enough since it's almost like a linear search on a Hashset _(since we're searching among enum members)_. The only possible bad case is when there is not valid unit, which leads to $O(n)$ (where $n$ is the number of unit category) complexity.
+The existing logic for searching unit category is pretty good enough since it's almost like a linear search on a Hashset _(since we're searching among enum members)_. The only possible bad case is when there is not valid unit, which leads to $O(n)$ (where $n$ is the number of unit category) complexity. But since the n, here is a a constant value since we have only gotten four categories---one can argue that it's $O(1)$.
+
+To be more honest, using simple python-native dictionary would be far better in terms of linear search compared to default Enum datatype in python. To get around it, we're using the `__members__` field from the Enum data structure that has the same underlying hashtable logic used in python-native dictionary for lookups. Thus giving us the $O(1)$ time complexity when we do `unit in category_data.units.__members__`.
+
+And the reason why we choose the categories to be enum, is because it's semantically suits the situation and also because the categories rarely change and also most static value that covery a mean that can be referenced with a value.
 
 One could say we could optimize it further by making while combining it with generator where we lazy load the data based on requirement, but it's overkill for such small dataset that we deal here and we would have far better performance when we using simple straight forward logic in situations like this...
 
@@ -380,13 +384,13 @@ One could say we could optimize it further by making while combining it with gen
   - Not to mention, the current nomarlize conversion logic (i.e., $f(x) = x \times c + k$) is a simple linear equation that works well for most set of unit categories. But epicly fails when it comes to any non-linear components such as exponential or logrithmic conversions used for units like decibles.
 - Maintainability is relativity good compared to first approach, but it's still bad.
   - Since we have introduced a proper structure with the abstraction layer, it is more maintainability compared to previous approach.
-  - Unlike first approach, you don't have to make huge refactors to the code base to make modification to existing logic or extend the compatible features.
-  - But on the flip side, we're blindly trusting these precomputed values in terms of application and that could be a huge issue.
-  - Maintaining the precomputed values can become little bit tough despite all of the values are placed in a single data structure.
+  - Unlike first approach, you don't have to make huge refactors to the code base to make modification to existing logic or extend the compatible features. Even though, this is not the best possible structure that can be easily refractored.
+  - Including to that, we're blindly trusting these precomputed values in a bunch of matrices where human error could be a very common place and that could be a huge issue.
+  - Maintaining the precomputed values can become huge pain in the asterisk despite having them all in a single place.
 - Coming to testability, it has greatly improved due since we have properly defined our abstraction. Thus makes it more easier have meaningful test coverages.
-- And as of performance, it's a bit complicated...
-  - Yes, we have best approach for getting category, we have precomputed values that can be indexed at $O(1)$ and the even the generalized formula takes $O(1)$. So it's the best possible solution right.
-  - Yes, it's best solution in terms of theortical speed of the algorithm. But not that great, when it's comes to space complexity and the amortized cost.
+- And as of performance, it's a not that simple as you think...
+  - Yes, we have best approach for getting category, we have precomputed values that can be indexed at $O(1)$ and the even the generalized formula takes $O(1)$. So it's the best possible solution right?
+  - Well, in terms of theortical time of the algorithm, it *is* $O(1)$. But coming to space complexity and the amortized cost, it's not that great.
   - For each run we're building and destroying the resgitry that contains badly set of badly-scalable data structures, this create a huge overhead that many might not realize.
   - To accommodate this we have some set of optimization, but they are out of the scope in terms of PRD.
   - Overally, the base approach gives moderate performance on average. But there could possibly be some cases where this approach can outperform the first approach.
@@ -412,7 +416,7 @@ I know, the whole point of this is to learn but I feel the system should be have
 
 In this approach, we will try to solve the same problem while keeping the fundamental idea of having a global registry but with a completely different ideaology. Here's instead of treating units as indexes, we see them more as node on a graph which feels similar to the [Hub-and-Spoke model](https://www.google.com/search?q=Hub-and-Spoke+model&oq=Hub-and-Spoke+model "what is hub-and-spoke?").
 
-If it's not clear by the name of this approach, we are trying to have a proxy conversion by normalizing the input unit to a base unit and then we convert it back to the expected unit. That's pretty much the idea.
+As the name of this approach suggests, we are just trying to have a proxy conversion by normalizing the input unit to a base unit and then we convert it back from the base unit to the expected unit. That's pretty much the idea.
 
 Yes, it does add an addition step to perform conversion but this approach is more flexible and scalable both in terms of units and categories. Since, we're identifying them as nodes (like $km \ (from) \ \rightarrow m \ (base) \ \rightarrow ft \ (to) \ $) we don't have to perform an additional search to find their category to later find and index the unit _(like in previous approach)_.
 
@@ -426,7 +430,7 @@ In this approach, we are converting the input unit value into base unit and the 
 
 If you think about it, we do have a generalized formula that can convert from one unit to another (i.e., $f(x) \ = \ x \times \ c + k$) and if we want to make this formula work, then we need to have $c$ and $k$ values both ways. But if we think about it that way it will take us back to the old ways of second approach.
 
-So if we want to use this generalized formula as normalization formula, we need to have an equivalent and opposite formula that results in starting value i.e., $g(f(x)) = x$. In other words, we need to derive an working inverse function for this generalized formula.
+So if we want to use this generalized formula as normalization formula, we need to have an equivalent and opposite formula that results in starting value i.e., $f^{-1}(f(x)) = x \ (or) \ g(f(x)) = x$. In other words, we need to derive an working inverse function for this generalized formula.
 
 Let's derive the inverse function using basic pre algebra,
 
@@ -457,12 +461,12 @@ $$
     \text{Let's derive the inverse function,} \\
       &\begin{aligned}
           f(x) &= x \times c + k \\
-          y &= x \times c + k \\
+          y &= x \times c + k &[\text{ substituting } f(x) \text{ with } y \ ] \\
           y - k &= x \times c \\
           \frac{y-k}{c} &= x \\
-          x &= \frac{y-k}{c} \\
-          f^{-1}(f(x)) &= \frac{y-k}{c} \\
-          g(f(x)) &= \frac{y-k}{c} \\
+          x &= \frac{y-k}{c} &\text{[ flipping the sides ]} \\
+          f^{-1}(f(x)) &= \frac{y-k}{c} &[\text{ substituting } x \text{ with } f^{-1}(f(x)) \ ] \\
+          g(f(x)) &= \frac{y-k}{c} &[\text{ substituting } f^{-1} \text{ with } g \ ] \\
           g(y) &= \frac{y-k}{c} \\
       \end{aligned} \\
     \text{Therefore,} \\
@@ -479,7 +483,6 @@ $$
 $$
 
 Nice, now we have both normalization and denormalization functions. Let's test it out with an example,
-
 
 $$
 \begin{aligned}
@@ -624,7 +627,7 @@ $$
 
 Great, now we have full picture of what's happening and how it's happening, let's take a look at how we're going to implemented code-wise...
 
-Starting with the global registry, we are gonna remodel previous data structure into a hashmap of data notes where each datanodes contains constant values to convert the current unit to base unit and other details which would end up something similar to the following,
+Starting with the global registry, we are gonna remodel previous data structure into a hashmap of data nodes where each data nodes contains constant values to convert the current unit to base unit and other details which would end up something similar to the following,
 
 ```py
 LengthUnits = Literal["kilometer", "meter", "centimeter", "mile", "yard", "foot", "inch"]
@@ -781,7 +784,10 @@ Talking about scalablity, it outperform from the both previous approaches that w
 >
 > This is just an possible implementation to extending the existing capabilities at an abstract level. This section is only exists as an extended discussion on a topic that was previous mentioned.
 >
-> In other words, this is not going to be part of the final design implementation---because this does not align with give requirements, lies outside the scope of the PRDs and most importantly to respect the princples of [YAGNI](https://www.google.com/search?q=YAGNI "what is YAGNI?").
+> In other words, this is not going to be part of the final design implementation because,
+> - This does not align with give requirements.
+> - Lies outside the scope of the PRDs.
+> - Most importantly to respect the princples of [YAGNI](https://www.google.com/search?q=YAGNI "what is YAGNI?").
 >
 > Consider this as an extended thinking/study that I made to properly cover all the possible factors that crossed the path while I want brainstroming about the design of this application.
 
@@ -880,7 +886,7 @@ GLOBAL_REGISTRY: Final[Mapping[AvailableUnits, AbstractUnitDataNode[Any]]] = Map
 
 > [!CAUTION]
 >
-> **The constant values and formula for logarithmic conversion and values are based on AI**. I really want to wrap this up and end this up quickly so that I can finish up this document and get on with the remaining docs so that I can move on to the actual development.
+> **The constant values and formula for logarithmic conversion shown in the above example are AI generated and are not verified by me personally**. I really want to wrap this up and end this up quickly so that I can finish up this document and get on with the remaining docs so that I can move on to the actual development.
 >
 > Since this only to convey my approach for cleaner expandability via this approach, I just went for shortcut. The values and formula might or might not be true, but **the approach is still solid and stands true**.
 
@@ -890,17 +896,31 @@ But since the units are out of scope of the PRDs, this will not be part of desig
 
 ### Optimization
 
-Now you might be thinking, what is there to optimize in this approach: we have optimized the space complexity down to $O(n)$ _(where, n stands for number of units)_ while maintaining the time complexity $O(1)$ and eliminating the need to perform category search.
+Now you might be thinking, what is there to optimize in this approach: we have optimized the space complexity down to $O(n)$ _(where, n stands for number of units)_ while maintaining the time complexity $O(1)$ and eliminating the need to perform linear search category.
 
 What else could be optimized? Well, I though the same... I thought this is it, the most optimal solution. So, I went and search online on how the same problem statement are implemented at a production level and I found that this is the very same approach used in existing solutions like Pint, unyt, etc.
 
-To keep it short, it's a base-centric approach where, during runtime, we precompute some additional constants from the precomputed values that we've hardcoded and cache these new values throughout the session of the application perform affine transformations in form of $(x + K) \times C$. Thus expanding the unit _(i.e., both input and target)_ from the base unit while brillinatly architecting the conversion logic to perform additive/subtrative arithematic operations before **relatively** compute heavy multiplication/division arithematic operation.
+To keep it short, in production the use a base-centric approach where, during runtime, we precompute some additional constants from the precomputed values that we've hardcoded and cache these new values throughout the session of the application perform affine transformations in form of $(x + K) \times C$. Thus expanding the unit _(i.e., both input and target)_ from the base unit while brillinatly architecting the conversion logic to perform additive/subtrative arithematic operations before **relatively** compute heavy multiplication/division arithematic operation.
 
-Despite all the benefits, I deemed this not suitable for the current application that I'm building. As much as I want to expand on that concept, it would get us anywhere in terms of optimization. The only reason, that approach will not work out is in terms of amortized cost. This is a one-shot application that performs a single unit conversion and doesn't retain any state/memory. If we proceed with that approach, the we would only be performing unnecessary computation for all the unit when we need atmost three of them. This is not good both in terms of space and time complexity. This approach would only make sense or would be valuable in production system that stay active for longer runs and hits caches to stay performant. To be more clear, this doesn't align with what we are building.
+> [!WARNING]
+>
+> The above statement that I have made about base-centric might not have been properly explained because there were many resource explain this approach and I had to heavily rely on AI to reach this conclusion based on not properly understood concept. If you have a better understand of what I was talking about, I would love to hear the thoughts or clarification from you. Please share your views on [GitHub Discussion](https://github.com/iamwatchdogs/Unit-Converter-py/discussions/2).
 
-> I really spent quite an amount of time trying to understand this approach since it give me that millisecond of performance, but once I spent days trying to understand the math and architecture _(to which I don't fully understand)_ I had enough understanding to realize this approach doesn't align with what I'm building.
+Despite all the benefits, I deemed this not suitable for the current application that I'm building. As much as I want to expand on that concept, it would get us anywhere in terms of optimization. The main reason, that approach will not work out is in terms of amortized cost.
 
-So, The only minor optimization that I can think of this approach is not to treat normalization and denormalization as a different step. I mean it kinda obvious when you think of it in terms of $f(x_{input}) = y_{base}$ and $g(y_{base}) = x_{output}$. I explained it in terms of two operation, just to explain the math and build the intuition but never meant to be the final design implementation.
+This is a one-shot application that performs a single unit conversion and doesn't retain any state/memory. If we proceed with that approach, then we would only be performing unnecessary computation for all the unit when we need atmost three of them. This is not good both in terms of space and time complexity. This approach would only make sense or would be valuable in production system that stay active for longer runs and hits caches to stay performant. To be more clear, this doesn't align with what we are building.
+
+> I really spent quite an amount of time trying to understand this approach since it give me hope to get that millisecond performance, but once I spent days/weeks trying to understand the math and architecture _(to which I don't fully understand)_ I had enough understanding to realize this approach doesn't align with what I'm building.
+
+So, The only minor optimization that I can think of this approach is not to treat normalization and denormalization as a different step. It kinda obvious when you think of it in terms of $f(x_{input}) = y_{base}$ and $g(y_{base}) = x_{output}$.
+
+> [!TIP]
+>
+> I explained it in terms of two operation _(normalization and denormalization)_, just to explain the math and to build the intuition. It was never meant to be the final design implementation.
+>
+> But here's a fun fact, this approach align with various production level systems such as pint, SAP ERP, etc. Pint maintains a similar registry system but handles things in a completely different way and SAP ERP compute intermediate base unit to scale well in production. This kind of behaviour can be observed in PostgreSQL with `pg_units` extension to utilize physical unit in the database cluster.
+>
+> And despite all these similar, the mode of usage of this application is different from production ones. Thus choosing more direct way to optimize the results.
 
 If you think about it,
 
@@ -937,15 +957,18 @@ $$
 \end{aligned}
 $$
 
-Yea... I think that sums up everything. I really don't want to make this any more complex, just a simple straight forward solution that is probably the best suited for this problem statement.
+Now, we're performing a single arithematic expression evaluation instead of two and by doing this we're avoiding to store the intermediatory results generated by the base unit. Thus performing better than the separately executing normalization and denormalization functions.
+
+Yup, that pretty much sums up everything. There could be more way to optimize this with some crazier hacks but I really don't want add unnecessary complexity. All I want is a simple straight forward optimal solution that is probably the best suited for this problem statement.
 
 ### Evaluation of Second Approach
 
 - The complexity of this approach is around moderate, since we're going round about the solution and trying to figure with a different approach mathematically.
-- The scalability of this approach is way better than previous solutions,
+- The scalability of this approach is way better than previous approaches,
   - The whole global registry is kinda like a big vector of units with just enough data to perform the conversion
   - If we talk in terms of space complexity, then it would $O(n)$ where n stands for number of units.
   - This scales well because all unit points towards their respective base unit and we can derived all units from base unit.
+  - But we're still loading all of them when we needs a few during a single use and that is fine because it way smaller than the previous approach. It's a good tradeoff.
 - Maintainability is fair better than last two approaches,
   - Since all we need to worry is to hardcode the proper precomputed values that are relevant from unit to it's respective base unit, it much more maintainable than the matrix approach.
   - Since we're defining proper abstractions and type, it would be much easier to catch bugs and any possible issues.
@@ -976,12 +999,12 @@ Although it's heavily reliant on the handcoded precomputed constant values, the 
 
 Before I end this design decision record, I need to clarify few thing despite how obvious they're. Here're the following this that were not mentioned prior to all the core system decision:
 
-- [How to compute the constants?](#how-to-compute-the-constants?)
+- [How to compute the constants?](#how-to-compute-the-constants)
 - [Base units](#base-units)
 
 ### How to compute the constants?
 
-This is pretty basis concept, we're just going to a few example to drive the relationship between various unit within their respective category. But instead of calculating all of these values manually, I'll be referring to the original source of measurements to get all of the values that is required to hardcode into the respective data structure.
+This is pretty basis concept, we're just going to a few example to drive the relationship between various unit within their respective category. But instead of calculating all of these values manually, I'll be referring to the original/trusted source of measurements to get all of the values that is required to hardcode into the respective data structure.
 
 Just to demonstrate and example of how we can do this manually, I'm gonna pick temperature category unit since they do require an offset.
 
