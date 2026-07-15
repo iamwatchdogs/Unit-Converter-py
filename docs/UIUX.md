@@ -73,7 +73,7 @@ $ unit_convert 1 km m
 1 kilometer = 1000.00 meters
 
 # The canonical form typically are denoted as purals.
-# The inputs that are signular units should be normalized
+# The inputs that are singnular units should be normalized
 # to match the canonical form.
 $ unit_convert 1 kilometer meter
 1 kilometer = 1000.00 meters
@@ -95,7 +95,7 @@ $ unit_convert -40 celsius fahrenheit
 
 > [!NOTE]
 >
-> Rememeber that despite some units of temperature support negative values, they still have a limited range of it.
+> Remember that despite some units of temperature support negative values, they still have a limited range of it.
 >
 > - Celsius: -273.15
 > - Fahrenheit: -459.67
@@ -237,7 +237,7 @@ $ unit-convert 1 seconds hours --precision 3 --json --debug
 
 When user want to see all the available units, they can use `--list-units` flag to print all the available units to stdout.
 
-Despite explictly mentioned not to use any table format for the output. It's better to have an neat table format to print all the available units, since it is more readable and user-friendly. The table format should have the following columns:
+Despite explicitly mentioned not to use any table format for the output. It's better to have an neat table format to print all the available units, since it is more readable and user-friendly. The table format should have the following columns:
 
 ```bash
 $ unit-convert --list-units
@@ -281,7 +281,7 @@ Based on the detailed provided by the requirements and prds, here're the possibl
 #### Invalid Input value
 
 If end user provide an invalid input value, then the application should print an error message to stderr and exit with a non-zero status code.
-This include all of the followin cases:
+This include all of the following cases:
 
 - Non-numeric value for `VALUE` argument.
     ```bash
@@ -382,8 +382,8 @@ This include all of the following cases:
 
 - Invalid flags or options (e.g., unrecognized flags, missing values for flags).
     ```bash
-    $ unit_convert 1 meters kilometers --precison 3
-    Error: Unrecognized flag '--precison'. Did you mean '--precision'?
+    $ unit_convert 1 meters kilometers --precision 3
+    Error: Unrecognized flag '--precision'. Did you mean '--precision'?
     Usage: unit_convert VALUE FROM_UNIT TO_UNIT [options]
     Try 'unit_convert --help' for more information.
     Exiting with status code 2.
@@ -447,6 +447,6 @@ For any other unexpected internal error, should be handled in this scenarios. Si
 ```bash
 # Assume the following example fails to due some reason.
 $ unit_convert 1 kilometers meters
-Error: Unknown Internal Error Occured. Please try again with debug mode.
+Error: Unknown Internal Error Occurred. Please try again with debug mode.
 Exiting with status code 3.
 ```

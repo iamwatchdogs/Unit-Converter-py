@@ -1,10 +1,10 @@
 # ANALYSIS
 
-This document analyzes the all the provide requirements and performs the necessary analyzis to determine the scope of the project and bring utmost specificity of expected output. We will use [REQUIREMENTS.md](REQUIREMENTS.md) as primary source of truth for our analysis and back up the details from remaining PRDs.
+This document analyzes the all the provide requirements and performs the necessary analysis to determine the scope of the project and bring utmost specificity of expected output. We will use [REQUIREMENTS.md](REQUIREMENTS.md) as primary source of truth for our analysis and back up the details from remaining PRDs.
 
 ## Project Scope
 
-This is a simple python-based project that provide a local cli to perform basic unit conversion with a few features and constraints. This project is specifically tailored to be beginner friendly while covering some of the curcial parts of the programming and pythonic concepts.
+This is a simple python-based project that provide a local cli to perform basic unit conversion with a few features and constraints. This project is specifically tailored to be beginner friendly while covering some of the crucial parts of the programming and pythonic concepts.
 
 This is the most simple python project meant for learning. Since the complexity of the project is bare minimum, this help me think, reason and develop the project in a more old-fashion way[^1].
 
@@ -14,7 +14,7 @@ This application is a simple unit convertor and it's main job is to help the spe
 
 > [!TIP]
 >
-> Unit is a basic means of a universally valid measurment system. It can be used to measure various physically conceptual entities like length, weight, time, temperature, and many more.
+> Unit is a basic means of a universally valid measurement system. It can be used to measure various physically conceptual entities like length, weight, time, temperature, and many more.
 >
 > We have multiple units of measument for various physical entities because historical, cultural, and practical reasons that evolved over centuries before global standardization.
 >
@@ -33,7 +33,7 @@ And based on the clients requirements, they specifically mentioned the following
 
 #### Length Conversion Logic
 
-Length is a category of unit that is used to measure the distance between two points. Amoungst them, meter, kilometer, centimeter, mile, yard, foot, and inch are the most common units.
+Length is a category of unit that is used to measure the distance between two points. Amongst them, meter, kilometer, centimeter, mile, yard, foot, and inch are the most common units.
 
 Here're the related conversion logic,
 
@@ -75,7 +75,7 @@ $$
 
 #### Weight Conversion Logic
 
-Weight is a category of unit that is used to measure the mass of an object. Amoungst them, gram, kilogram, pound, ounce are the most common units.
+Weight is a category of unit that is used to measure the mass of an object. Amongst them, gram, kilogram, pound, ounce are the most common units.
 
 Here're the related conversion logic,
 
@@ -103,7 +103,7 @@ $$
 
 #### Time Conversion Logic
 
-Time is a category of unit that is used to measure the duration of an event. Amoungst them, second, minute, hour, day are the most common units.
+Time is a category of unit that is used to measure the duration of an event. Amongst them, second, minute, hour, day are the most common units.
 
 Here're the related conversion logic,
 
@@ -130,7 +130,7 @@ $$
 
 #### Temperature Conversion Logic
 
-Temperature is a category of unit that is used to measure the temperature of an object. Amoungst them, Celsius, Fahrenheit, Kelvin are the most common units.
+Temperature is a category of unit that is used to measure the temperature of an object. Amongst them, Celsius, Fahrenheit, Kelvin are the most common units.
 
 Here're the related conversion logic,
 
@@ -157,7 +157,7 @@ These are the very specific and crucial requirements that are required to be imp
 - Coverations of input value from one unit to another unit within the same category [^4].
 - Support only length, weight, time, and temperature units [^2].
 - Handling input properly [^4], that includes:
-  - Esnure user is provding inputs in the correct format.
+  - Ensure user is providing inputs in the correct format.
   - Ensure the input value is a valid value for the input _(that includes negative values for temperature)_.
   - Ensure the input unit is a valid unit for the input.
   - Normarilze the input units to their canonical form.
@@ -179,7 +179,7 @@ These are the requirements that are not directly related to the core functionali
 - Configuring pre-commit hooks [^10].
 - Using GitHub Actions for CI/CD [^9].
 - Don't overcomplicate or overengineer simple project [^12] [^13] [^14].
-- Data persistance is unnecessary, use simple data models [^15].
+- Data persistence is unnecessary, use simple data models [^15].
 - Source code should be self-documenting.
 - Everything should be neatly documented [^16].
 
@@ -188,9 +188,9 @@ These are the requirements that are not directly related to the core functionali
 
 [^1]: [Waterfalls model](https://en.wikipedia.org/wiki/Waterfall_model)
 
-[^2]: [Required Conversion Categories | CLIENT_PRD.md](prd/CLIENT_PRD.md#required-conversion-categories)
+[^2]: [Required Conversion Categories | CLIENT_PRD.md](./prd/CLIENT_PRD.md#required-conversion-categories)
 
-[^3]: [Expected User Workflow | CLIENT_PRD.md](prd/CLIENT_PRD.md#expected-user-workflow)
+[^3]: [Expected User Workflow | CLIENT_PRD.md](./prd/CLIENT_PRD.md#expected-user-workflow)
 
 [^4]: [Expected Behaviors | REQUIREMENTS.md](REQUIREMENTS.md#expected-behaviors)
 
@@ -200,13 +200,13 @@ These are the requirements that are not directly related to the core functionali
 
 [^7]: [Acceptance Criteria | REQUIREMENTS.md](REQUIREMENTS.md#acceptance-criteria)
 
-[^8]: [Optional Features | REQUIREMENTS.md](REQUIREMENTS.md#optional-features)
+[^8]: [Optional Features | REQUIREMENTS.md](./REQUIREMENTS.md#optional-features)
 
 [^9]: [Observability And Profiling | REQUIREMENTS.md](REQUIREMENTS.md#observability-and-profiling)
 
 [^10]: [Core Requirements | REQUIREMENTS.md](REQUIREMENTS.md#core-requirements)
 
-[^11]: [Test Strategy | COUNCIL_PRD.md](prd/COUNCIL_PRD.md#test-strategy)
+[^11]: [Test Strategy | COUNCIL_PRD.md](./prd/COUNCIL_PRD.md#test-strategy)
 
 [^12]: [Non-Goals | REQUIREMENTS.md](REQUIREMENTS.md#non-goals)
 
