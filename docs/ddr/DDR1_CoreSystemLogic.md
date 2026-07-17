@@ -625,6 +625,20 @@ $$
 \end{aligned}
 $$
 
+> [!TIP]
+>
+> Mathematically, all we're doing here is **an set of affine transformations via composite functions**. So, what does that even mean?
+>
+> Let's start with more mathematical definition:
+>
+> - **Affine transformation:** In much simpler terms, it's an non-linear transformation that can be achieve by translating an geometric mapping of a linear transformation (such as scale, rotate, etc) thus resulting in an expression similar to $m \times x + c$ format.
+>
+> - **Composite function**: This basically means using a functions output as an input to another function i.e., $(g \circ f)(x) = g(f(x))$.
+>
+> In the context of what we're doing here---we're performing two 1D affine transformation where we're scaling the input coefficient and then translating the result with an offset value. We're doing all of that as two separate functions where the output of one function is passed as input to another.
+>
+> We're considering them as separate functions and not as a pure inverse of each other, is because we're modulating the original parameters of the inner function in the outer function.
+
 Great, now we have full picture of what's happening and how it's happening, let's take a look at how we're going to implemented code-wise...
 
 Starting with the global registry, we are gonna remodel previous data structure into a hashmap of data nodes where each data nodes contains constant values to convert the current unit to base unit and other details which would end up something similar to the following,
@@ -1022,7 +1036,8 @@ $$
     f(x) &= x \times c + k \\
     \text{} \\
     f_{C \rightarrow F} \ (0) &= 0 \times c_{C \rightarrow F} + k_{C \rightarrow F} \\
-    32 &= 0 + k_{C \rightarrow F} \\
+    \text{} \\
+    32 &= 0 + k_{C \rightarrow F} &[\text{ substituting } f_{C \rightarrow F} \ (0) \text{ value } ] \\
     \text{} \\
     \text{} \\
     k_{C \rightarrow F} &= 32
@@ -1030,8 +1045,11 @@ $$
   \text{From boiling point of water,} \\
 	&\begin{aligned}
     f_{C \rightarrow F} \ (100) &= 100 \times c_{C \rightarrow F} + k_{C \rightarrow F} \\
-    212 &= 100 \times c_{C \rightarrow F} + 32 \\
+    \text{} \\
+    212 &= 100 \times c_{C \rightarrow F} + 32 &[\text{ substituting } f_{C \rightarrow F} \ (100) \text{ and } k_{C \rightarrow F} \text{ values } ] \\
+    \text{} \\
     212 - 32 &= 100 \times c_{C \rightarrow F} \\
+    \text{} \\
     \frac{180}{100} &= c_{C \rightarrow F} \\
     \text{} \\
     \text{} \\
