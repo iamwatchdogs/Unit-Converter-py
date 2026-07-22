@@ -313,10 +313,10 @@ class UnitCategoryData:
 Now, the only logic that's missing from the whole equation is the finding the unit category to get the correct matrix to index these precomputed values. It's a simple and straight forward logic too,
 
 ```py
-class UnitNotFound(ValueError):
+class UnitNotFoundError(ValueError):
     pass
 
-class DifferentCategoryUnits(ValueError):
+class DifferentCategoryError(ValueError):
     pass
 
 def find_unit_category(unit: str) -> UnitCategory:
@@ -324,7 +324,7 @@ def find_unit_category(unit: str) -> UnitCategory:
         if unit in category_data.units.__members__:
             return category
 
-    raise UnitNotFound(f"Invalid {unit} unit.")
+    raise UnitNotFoundError(f"Invalid {unit} unit.")
 
 def get_category(from_unit: str, to_unit: str) -> UnitCategory:
     from_unit_category = find_unit_category(from_unit)
@@ -333,7 +333,7 @@ def get_category(from_unit: str, to_unit: str) -> UnitCategory:
     if from_unit_category == to_unit_category:
         return from_unit_category
 
-    raise DifferentCategoryUnits(
+    raise DifferentCategoryError(
         f"{from_unit} and {to_unit} are not from the same unit category."
     )
 ```
@@ -749,13 +749,13 @@ That's right, we're not checking for compatible unit categories. In previous imp
 Well, it's kinda obvious at this point but we have the relevant information in the data node themselves. And we could resolve this issue with simple if-condition thus eliminating the requirement to perform a $O(n)$ search across enums. On the point, we can also check whether the unit are valid units or not by checking on the hashset of the global registry.
 
 ```py
-class InvalidNumericType(TypeError):
+class InvalidNumericTypeError(TypeError):
     pass
 
-class UnitNotFound(ValueError):
+class UnitNotFoundError(ValueError):
     pass
 
-class DifferentCategoryUnits(ValueError):
+class DifferentCategoryError(ValueError):
     pass
 
 def convert(value: float, from_unit: str, to_unit: str) -> float:
@@ -763,18 +763,18 @@ def convert(value: float, from_unit: str, to_unit: str) -> float:
     # ... Any Prior logic ...
 
     if not isinstance(value, (float, int)):
-        raise InvalidNumericType(f"{str(value)} is not a numeric value.")
+        raise InvalidNumericTypeError(f"{str(value)} is not a numeric value.")
 
     if from_unit not in GLOBAL_REGISTRY:
-        raise UnitNotFound(f"Invalid {from_unit} unit.")
+        raise UnitNotFoundError(f"Invalid {from_unit} unit.")
     if to_unit not in GLOBAL_REGISTRY:
-        raise UnitNotFound(f"Invalid {to_unit} unit.")
+        raise UnitNotFoundError(f"Invalid {to_unit} unit.")
 
     from_unit_datanode: UnitDataNode = GLOBAL_REGISTRY[from_unit]
     to_unit_datanode: UnitDataNode = GLOBAL_REGISTRY[to_unit]
 
     if from_unit_datanode.category != to_unit_datanode.category:
-        raise DifferentCategoryUnits(
+        raise DifferentCategoryError(
             f"{from_unit} and {to_unit} are not from the same unit category."
         )
 
