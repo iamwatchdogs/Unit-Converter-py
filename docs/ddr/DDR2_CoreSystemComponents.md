@@ -139,7 +139,7 @@ The main concept of input validation is to ensure the system has more realistic 
 
 To be more specific, we are going to implement only two validations i.e.,
 
-- By default, negative number are accepted _(like there can't be -10km in real physical world)_
+- By default, negative number are not accepted _(like there can't be -10km in real physical world)_
 - Next specific to temperature unit category as they have physical numerical threshold based on the units.
 
 In anycase, these are the only input validation that we're preforming at the moment. The logic should stay simple and straight-forward while ensuring any changes/refactoring doesn't take greater efforts in the future if the requirement changes.
@@ -150,15 +150,16 @@ So, let's start with the very first simplest logic of implementing the validatio
 class NegativeInputError(ValueError):
     pass
 
+# --- In main program ---
 if input_value < 0:
     raise NegativeInputError("Please provide a positive integer value.") from None
 ```
 
 But this is incomplete, because we haven't considered temperature category...
 
-Unlike other physical that doesn't make sense when you says -1.35 seconds _(unless, you use it as hertz to calculate clock cycles, which again, is out of the scope of this project)_, some unit like Celsius and Fahrenheit. And in the real world physical constraints, the temperature has minimum and maximum thresholding value.
+Unlike other physical that doesn't make sense when you says -1.35 seconds, some unit like Celsius and Fahrenheit. And in the real world physical constraints, the temperature has minimum and maximum thresholding value.
 
-From the above, you might thinking of implement minimalistic changes as following:
+Based on what we just discussed, you might thinking of implement minimalistic changes as following:
 
 ```py
 class ThresholdError(ValueError):
@@ -170,6 +171,7 @@ class UpperLimitExceededError(ThresholdError):
 class LowerLimitExceededError(ThresholdError):
     pass
 
+# --- In main program ---
 from_unit_datanode: UnitDataNode = GLOBAL_REGISTRY[from_unit]
 
 if from_unit_datanode.category == UnitCategory.TEMPERATURE:
@@ -185,7 +187,7 @@ if input_val < 0:
     raise NegativeInputError("Please provide a positive integer value.") from None
 ```
 
-But this approach is missing a huge part of this logic i.e., the min and max value are not same for all the units. In other words, each temperature unit has it's own min/max values. So, we need to add this logic at a more abstract layer i.e., at class level.
+This could work, but we're missing out a huge part of this logic i.e., the min and max value are not same for all the units. In other words, each temperature unit has it's own min/max values. So, we need to add this logic at a more abstract layer i.e., at class level.
 
 We can achieve this by create a subclass from the current `UnitDataNode` dataclass and then we extend the baseclass to hold on the min & max values. Let's try putting it to code,
 
@@ -208,6 +210,7 @@ class TemperatureUnitDataNode(UnitDataNode):
 Yea, apart from the thing we discussed, I took the liberaty to set the UnitCategory which is kinda obvious thing to do. Now, if we take this back to this dataclass back to our previous logic,
 
 ```py
+# --- In main program ---
 if from_unit_datanode.category == UnitCategory.TEMPERATURE:
     if  input_val > from_unit_datanode.upper_limit:
         raise UpperLimitExceededError("The input is greater than maximum thresholding temperature value.")
@@ -221,7 +224,9 @@ Yes, we finally achieved our verification. But this looks ugly as hell and we wo
 
 Well, we can hide all of this within a function like `validate()`, but them you have to pass the `from_unit_datanode` to get the values of `category`, `upper_limit` and `lower_limit` and then you need to the actual `input_value` to perform the total validation. I says it's smelly code when I smell one _(\*cricket noises)_...
 
-Anyway, what I'm trying to say is that there could be a better way to handle such situtions such as making the validation as a method. I mean, think about it, we're manually checking with the value that are native to the dataclass, so it would make sense to put this logic into a method that is native the temperate dataclass.
+Anyway... All I was trying to say is that this is not much scalable. It's not that desirable to write them in such if-else conditions that will grow in spagatti code in future. I am aware that this is a small project and doesn't need to do additional things to perform these checks. And there're better ways to handle it.
+
+So, we start by moving this validation logic as into the dataclass making it as a method that uses the upper and lower limits which are members of the dataclass.
 
 ```py
 @dataclass(frozen=True, slots=True)
@@ -252,6 +257,7 @@ class TemperatureUnitDataNode(UnitDataNode):
 Now our original logic becomes much more simpler to read and maintain with a slight meaningful cost of coupling the logic _(which is acceptable)_,
 
 ```py
+# --- In main program ---
 if from_unit_datanode.category == UnitCategory.TEMPERATURE:
     from_unit_datanode.validate_input(input_val)
 if input_val < 0:
@@ -296,14 +302,235 @@ class TemperatureUnitDataNode(UnitDataNode):
 This is great, now the whole validation logic boils down to,
 
 ```py
+# --- In main program ---
 from_unit_datanode.validate_input(input_val)
 ```
 
 This is great, we have abstract out the whole logic and it's way more readable. But there's an issue with this approach...
 
-The reason we create and use methods is to perform an reusable action by access the member of that instance. But we're not using any instance member within the baseclass, and theortically it would be far better if we make it as an static method since it doesn't use any instance members and only evaluates based on input value. But we can't convert this function into a static method in base class since, it's being inherited & overridden by the subclass.
+The reason we create/use methods is to perform an reusable action by access the member of that instance. But we're not using any instance member within the baseclass, and theortically it would be far better if we make it as an static method since it doesn't use any instance members and only evaluates based on input value. But we do try to make it as a static method in base class and instance method in child class, there would be a huge inconsistency in how we call these Callables.
 
-So, more feel like an necessary evil where we have to kind of ignore the fact that methods are defined for use of instance members and proceed with approach since it make things much simpler. I know this logic is being tightly coupled with the classes, but for now we can proceed with this logic for better abstraction. And we don't to worry about it because, if there's any issue in future, we can refactor it into more reasonable implementation.
+Some many call it "necessary evil" to make their lives much simpler and some people will refactor it a little to make it more meaningful to use i.e., adding upper and lower thresholds within the base class itself. The implementation would look something like this:
+
+```py
+@dataclass(frozen=True, slots=True)
+class UnitDataNode:
+    name: AvailableUnits
+    base_unit: AvailableUnits
+    category: UnitCategory
+    constants: ConstantValues
+    lower_limit: Decimal = Decimal('0')
+    upper_limit: Decimal | None = None
+
+    def validate_input(self, input_val: Decimal) -> None:
+        if input_val < self.lower_limit:
+            raise LowerLimitExceededError(
+                "The input is lower than minimum thresholding temperature value."
+            ) from None
+        elif self.upper_limit is not None and input_val > self.upper_limit:
+            raise UpperLimitExceededError(
+                "The input is greater than maximum thresholding temperature value."
+            ) from None
+
+@dataclass(frozen=True, slots=True)
+class TemperatureUnitDataNode(UnitDataNode):
+    category: UnitCategory = field(init=False, default=UnitCategory.TEMPERATURE)
+```
+
+This may see good and justifiable than pervious logics, but there're huge issues...
+
+- During runtime, one can modify the value of `lower_limit` in the base class instance. And if we try to set a static value and set the `init` to  `False` in the base class, then we need to override it with a default value and set the `init` to `True` in subclass. We have lesser flexibility.
+- Since we pushed the unified logic into the base class, we are losing out the `NegativeInputError` exception.
+- The values `lower_limit` & `upper_limit` and validation logic is tight coupled with the dataclasses.
+
+To resolve these issue, we can use the concept of composition to decouple this logic. Before that, let's try to understand why we're doing this.
+
+If you look close enough, the members _(`upper_limit`, `lower_limit` and `validate_input`)_ doesn't really feel like exactly part of the container we're trying to keep. The whole logic around it feel like an external factor, trying it's best to be part of the original class. An by add these members, we're guess for all the future hierarchy to expect these members _(values and behaviour)_.
+
+This happens due to "is-a" relationship and this can be resolve using "has-a" relationship. In other words, we move from "this behaviour is what define this class" to "this class has this functionality". To put more simple, we need to make it from "validation is part of the original definition of the dataclass" to "the dataclass has a validator".
+
+If you look close enough, validators are just a small logic that just perform validation based on respective inputs. So, we can break them as an external logic _(maybe like an class or something)_ and add it as an memeber into the existing dataclass via composition.
+
+Since we're outsouring the validation logic, we can use a simple strategy pattern to create some concert strategies for various uses cases and in our case it's for handling non-negative inputs and for handling range based inputs.
+
+And when we put it code, we end up with something as following,
+
+```py
+class Validator(Protocol):
+    @abstractmethod
+    def __call__(self, input_val: Decimal) -> None: ...
+
+@dataclass(frozen=True, slots=True)
+class NonNegativeValidator:
+    def __call__(self, input_val: Decimal) -> None:
+        if input_val < 0:
+            raise NegativeInputError("Please provide a positive integer value.") from None
+
+@dataclass(frozen=True, slots=True)
+class RangeValidator:
+    upper_limit: Decimal
+    lower_limit: Decimal
+
+    def __call__(self, input_val: Decimal) -> None:
+        if input_val < self.lower_limit:
+            raise LowerLimitExceededError(
+                "The input is lower than minimum thresholding temperature value."
+            ) from None
+        elif input_val > self.upper_limit:
+            raise UpperLimitExceededError(
+                "The input is greater than maximum thresholding temperature value."
+            ) from None
+
+@dataclass(frozen=True, slots=True)
+class UnitDataNode:
+    name: AvailableUnits
+    base_unit: AvailableUnits
+    category: UnitCategory
+    constants: ConstantValues
+    validator: Validator = field(default_factory=NonNegativeValidator)
+
+    def validate_input(self, input_val: Decimal) -> None:
+        self.validator(input_val)
+
+# --- While defining the Global Registry ---
+GLOBAL_REGISTRY: Final[Mapping[AvailableUnits, UnitDataNode]] = MappingProxyType({
+    "kilometer": UnitDataNode(
+        name="kilometer",
+        base_unit="meter",
+        category=UnitCategory.LENGTH,
+        constants=ConstantValues(multiplier=1000.0)
+    ),
+    "meter": UnitDataNode(
+        name="meter",
+        base_unit="meter",
+        category=UnitCategory.LENGTH,
+        constants=ConstantValues(multiplier=1.0)
+    ),
+    ...,
+    "celsius": UnitDataNode(
+        name="celsius",
+        base_unit="kelvin",
+        category=UnitCategory.Temperature,
+        constants=ConstantValues(multiplier=1, offset=273.15),
+        validator=RangeValidator(lower_limit=Decimal('0'), upper_limit=Decimal('inf'))
+    ),
+    ...
+})
+```
+
+This looks much clear and remove unnecessary inheritance when we outsource the validation handling logic to external classes. Since, we are handing off the state management to the validation type class (upper & lower limits), we don't have to worry about handling the them by creating them a subclass from `UnitDataNode`.
+
+> [!TIP]
+>
+> FYI, `Protocol` is another way to create an interface in python apart from the commonly used `ABC`s. The major difference between the `ABC`s and `Protocol`s are that how they enforce the abstraction mechanism. For `ABC`s, we typically write abstract methods to define the interface and subclass needs to inherit them and override these methods to become concert class thus enforcing normial typing. The `Protocol`s are more into [duck typing](https://www.google.com/search?q=duck+typing&oq=duck+typing) where the logic doesn't necessarily have to be in a hierarchical structure like inheritance, but needs requires to maintain the defined structure.
+>
+> The reason, I preferred `Protocol`s here compared to `ABC`s is that we're only checking for one specific definition of a single method and do not want to have a strict hierarchical structure of inheritance.
+
+But if you look close enough, these's a huge issue in this implementation. If you look close enough, we're creating unnecessary objects from `NonNegativeValidator` class, when all we need is a simple execute a stateless function. So, we can convert this into a simple function and set it as a default value instead of default factory,
+
+```py
+class Validator(Protocol):
+    @abstractmethod
+    def __call__(self, input_val: Decimal) -> None: ...
+
+
+def non_negative_validator(input_val: Decimal) -> None:
+    if input_val < 0:
+        raise NegativeInputError("Please provide a positive integer value.") from None
+
+@dataclass(frozen=True, slots=True)
+class RangeValidator:
+    upper_limit: Decimal
+    lower_limit: Decimal
+
+    def __call__(self, input_val: Decimal) -> None:
+        if input_val < self.lower_limit:
+            raise LowerLimitExceededError(
+                "The input is lower than minimum thresholding temperature value."
+            ) from None
+        elif input_val > self.upper_limit:
+            raise UpperLimitExceededError(
+                "The input is greater than maximum thresholding temperature value."
+            ) from None
+
+@dataclass(frozen=True, slots=True)
+class UnitDataNode:
+    name: AvailableUnits
+    base_unit: AvailableUnits
+    category: UnitCategory
+    constants: ConstantValues
+    validator: Validator = field(default=non_negative_validator)
+
+    def validate_input(self, input_val: Decimal) -> None:
+        self.validator(input_val)
+```
+
+Now this is way better than unnecessary objects, just for a stateless function call. But now, we have another problem. Yes, the code works without any issue, but it's not consistant. We have a plain function and a class that generates callable objects. So to make it consistant, we need to convert one of them into a similar pattern and since we can't achieve that using calls without bad logic, we have to convert the `RangeValidator` into a function.
+
+But this is not that simple, since `RangeValidator` is not a stateless function. It needs upper and lower limit, so we create this refactor this class from an object factory _(i.e., class)_ to function factory _(i.e., higher order function)_. Since python treats all the functions as first class citizens, we are simply treat them as objects in general _(because they are object indeed)_, so we write a function wrapper that return the function by setting the state recieved as input args.
+
+In other words, Implementation can be simplified as following,
+
+```py
+type Validator = Callable[[Decimal], None]
+
+def non_negative_validator(input_val: Decimal) -> None:
+    if input_val < 0:
+        raise NegativeInputError("Please provide a positive integer value.") from None
+
+def range_validator_factory(/, upper_limit: Decimal, lower_limit: Decimal) -> Validator:
+    def validator(input_val: Decimal) -> None:
+        if input_val < lower_limit:
+            raise LowerLimitExceededError(
+                "The input is lower than minimum thresholding temperature value."
+            ) from None
+        elif input_val > upper_limit:
+            raise UpperLimitExceededError(
+                "The input is greater than maximum thresholding temperature value."
+            ) from None
+    return validator
+
+@dataclass(frozen=True, slots=True)
+class UnitDataNode:
+    name: AvailableUnits
+    base_unit: AvailableUnits
+    category: UnitCategory
+    constants: ConstantValues
+    validator: Validator = field(default=non_negative_validator)
+
+    def validate_input(self, input_val: Decimal) -> None:
+        self.validator(input_val)
+
+# --- While defining the Global Registry ---
+GLOBAL_REGISTRY: Final[Mapping[AvailableUnits, UnitDataNode]] = MappingProxyType({
+    "kilometer": UnitDataNode(
+        name="kilometer",
+        base_unit="meter",
+        category=UnitCategory.LENGTH,
+        constants=ConstantValues(multiplier=1000.0)
+    ),
+    "meter": UnitDataNode(
+        name="meter",
+        base_unit="meter",
+        category=UnitCategory.LENGTH,
+        constants=ConstantValues(multiplier=1.0)
+    ),
+    ...,
+    "celsius": UnitDataNode(
+        name="celsius",
+        base_unit="kelvin",
+        category=UnitCategory.Temperature,
+        constants=ConstantValues(multiplier=1, offset=273.15),
+        validator=range_validator_factory(
+            lower_limit=Decimal('0'),
+            upper_limit=Decimal('inf')
+        )
+    ),
+    ...
+})
+```
+
+Now, this is more pratical and non-smelly code that can be shipped. This also much more scalable and less bloated, now that we have decoupled the logic using strategy pattern.
 
 ## Handling precision
 
