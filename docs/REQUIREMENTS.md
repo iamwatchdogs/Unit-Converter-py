@@ -276,9 +276,9 @@ You may not remove the required categories, skip type checking, skip tests, or m
 
 ## References
 
-- [Client PRD](prd/CLIENT_PRD.md)
-- [SME PRD](prd/SME_PRD.md)
-- [Council PRD](prd/COUNCIL_PRD.md)
+- [Client PRD](./prd/CLIENT_PRD.md)
+- [SME PRD](./prd/SME_PRD.md)
+- [Council PRD](./prd/COUNCIL_PRD.md)
 - [Python argparse documentation](https://docs.python.org/3/library/argparse.html)
 - [Python logging documentation](https://docs.python.org/3/library/logging.html)
 - [Python time.perf_counter documentation](https://docs.python.org/3/library/time.html#time.perf_counter)
